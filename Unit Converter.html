@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Unit Converter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.js"></script>
+  </head>
+  <body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-4xl mx-auto">
+      <h1 class="text-3xl font-bold text-center mb-8">Unit Converter</h1>
+
+      <!-- Tabs -->
+      <div class="flex mb-6 bg-white rounded-lg shadow-sm">
+        <button
+          onclick="switchTab('length')"
+          id="lengthTab"
+          class="flex-1 px-4 py-2 text-center rounded-l-lg bg-blue-500 text-white"
+        >
+          Length
+        </button>
+        <button
+          onclick="switchTab('weight')"
+          id="weightTab"
+          class="flex-1 px-4 py-2 text-center bg-gray-200"
+        >
+          Weight
+        </button>
+        <button
+          onclick="switchTab('temperature')"
+          id="temperatureTab"
+          class="flex-1 px-4 py-2 text-center rounded-r-lg bg-gray-200"
+        >
+          Temperature
+        </button>
+      </div>
+
+      <!-- Converter Form -->
+      <div class="bg-white p-6 rounded-lg shadow-sm">
+        <div class="grid grid-cols-1 gap-6">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2"
+                >From</label
+              >
+              <select id="fromUnit" class="w-full p-2 border rounded-md">
+                <!-- Options will be populated by JavaScript -->
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2"
+                >To</label
+              >
+              <select id="toUnit" class="w-full p-2 border rounded-md">
+                <!-- Options will be populated by JavaScript -->
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2"
+              >Value</label
+            >
+            <input
+              type="number"
+              id="inputValue"
+              class="w-full p-2 border rounded-md"
+              placeholder="Enter value"
+            />
+          </div>
+
+          <button
+            onclick="convert()"
+            class="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition-colors"
+          >
+            Convert
+          </button>
+
+          <div id="result" class="text-center text-lg font-semibold mt-4"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const units = {
+        length: {
+          millimeter: { to: "meter", factor: 0.001 },
+          centimeter: { to: "meter", factor: 0.01 },
+          meter: { to: "meter", factor: 1 },
+          kilometer: { to: "meter", factor: 1000 },
+          inch: { to: "meter", factor: 0.0254 },
+          foot: { to: "meter", factor: 0.3048 },
+          yard: { to: "meter", factor: 0.9144 },
+          mile: { to: "meter", factor: 1609.344 },
+        },
+        weight: {
+          milligram: { to: "gram", factor: 0.001 },
+          gram: { to: "gram", factor: 1 },
+          kilogram: { to: "gram", factor: 1000 },
+          ounce: { to: "gram", factor: 28.3495 },
+          pound: { to: "gram", factor: 453.592 },
+        },
+        temperature: {
+          Celsius: {
+            toBase: (value) => value,
+            fromBase: (value) => value,
+          },
+          Fahrenheit: {
+            toBase: (value) => ((value - 32) * 5) / 9,
+            fromBase: (value) => (value * 9) / 5 + 32,
+          },
+          Kelvin: {
+            toBase: (value) => value - 273.15,
+            fromBase: (value) => value + 273.15,
+          },
+        },
+      };
+
+      let currentUnit = "length";
+
+      function switchTab(unitType) {
+        currentUnit = unitType;
+        document.getElementById(
+          "lengthTab"
+        ).className = `flex-1 px-4 py-2 text-center ${
+          unitType === "length" ? "bg-blue-500 text-white" : "bg-gray-200"
+        }`;
+        document.getElementById(
+          "weightTab"
+        ).className = `flex-1 px-4 py-2 text-center ${
+          unitType === "weight" ? "bg-blue-500 text-white" : "bg-gray-200"
+        }`;
+        document.getElementById(
+          "temperatureTab"
+        ).className = `flex-1 px-4 py-2 text-center ${
+          unitType === "temperature" ? "bg-blue-500 text-white" : "bg-gray-200"
+        }`;
+
+        populateUnitSelects();
+        document.getElementById("result").textContent = "";
+      }
+
+      function populateUnitSelects() {
+        const fromSelect = document.getElementById("fromUnit");
+        const toSelect = document.getElementById("toUnit");
+        fromSelect.innerHTML = "";
+        toSelect.innerHTML = "";
+
+        const unitOptions = Object.keys(units[currentUnit]);
+
+        unitOptions.forEach((unit) => {
+          fromSelect.add(new Option(unit, unit));
+          toSelect.add(new Option(unit, unit));
+        });
+      }
+
+      function convert() {
+        const fromUnit = document.getElementById("fromUnit").value;
+        const toUnit = document.getElementById("toUnit").value;
+        const inputElement = document.getElementById("inputValue");
+        const inputValue = parseFloat(inputElement.value);
+
+        // Enhanced input validation
+        if (!inputElement.value.trim()) {
+          document.getElementById("result").textContent =
+            "Please enter a value";
+          return;
+        }
+
+        if (isNaN(inputValue)) {
+          document.getElementById("result").textContent =
+            "Please enter a valid number";
+          return;
+        }
+
+        try {
+          let result;
+          if (currentUnit === "temperature") {
+            const celsius = units[currentUnit][fromUnit].toBase(inputValue);
+            result = units[currentUnit][toUnit].fromBase(celsius);
+          } else {
+            const baseUnit = currentUnit === "length" ? "meter" : "gram";
+            const baseValue = inputValue * units[currentUnit][fromUnit].factor;
+            result = baseValue / units[currentUnit][toUnit].factor;
+          }
+
+          if (isNaN(result) || !isFinite(result)) {
+            throw new Error("Conversion resulted in an invalid value");
+          }
+
+          document.getElementById(
+            "result"
+          ).textContent = `${inputValue} ${fromUnit} = ${result.toFixed(
+            4
+          )} ${toUnit}`;
+        } catch (error) {
+          document.getElementById("result").textContent =
+            "An error occurred during conversion";
+          console.error(error);
+        }
+      }
+
+      // Initialize the converter with length units
+      switchTab("length");
+    </script>
+  </body>
+</html>
